@@ -1,0 +1,4 @@
+eod-settlement
+*.o
+data/balances.dat
+data/errors.log
