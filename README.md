@@ -88,6 +88,12 @@ EOD-SETTLEMENT: batch run complete
   skip-and-log error path. They show up in `data/errors.log`, not as a
   crash.
 
+All four file paths can be redirected via environment variables
+(`EOD_OPENING_BALANCES_FILE`, `EOD_TRANSACTIONS_FILE`, `EOD_BALANCES_FILE`,
+`EOD_ERRORS_FILE`) — unset or empty falls back to the `data/...` defaults
+above. Used by `ledger-rail/e2e/tests/reconciliation.test.ts` to run this
+program against synthetic transactions without touching the sample files.
+
 ## Verifying the output
 
 After a run, inspect `data/balances.dat` — one line per account, account

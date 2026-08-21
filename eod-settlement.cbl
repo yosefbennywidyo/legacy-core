@@ -31,23 +31,27 @@
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
+      *> Assigned to WORKING-STORAGE paths (not literals) so the e2e
+      *> reconciliation test (ledger-rail/e2e/tests/reconciliation.test.ts)
+      *> can point this run at synthetic data without overwriting the
+      *> checked-in sample files under data/ — see READ-FILE-PATHS-FROM-ENV.
            SELECT OPENING-BALANCE-FILE
-               ASSIGN TO "data/opening-balances.dat"
+               ASSIGN TO WS-OPENING-BALANCE-PATH
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-OPEN-BAL-STATUS.
 
            SELECT TRANSACTION-FILE
-               ASSIGN TO "data/transactions.dat"
+               ASSIGN TO WS-TRANSACTION-PATH
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-TRANS-STATUS.
 
            SELECT BALANCE-REPORT-FILE
-               ASSIGN TO "data/balances.dat"
+               ASSIGN TO WS-BALANCE-REPORT-PATH
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-BALANCE-STATUS.
 
            SELECT ERROR-LOG-FILE
-               ASSIGN TO "data/errors.log"
+               ASSIGN TO WS-ERROR-LOG-PATH
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-ERROR-STATUS.
 
@@ -69,6 +73,18 @@
        01  ERROR-LOG-RECORD            PIC X(80).
 
        WORKING-STORAGE SECTION.
+      *> Default paths match the original hardcoded literals; overridable
+      *> via environment variables, see READ-FILE-PATHS-FROM-ENV.
+       01  WS-OPENING-BALANCE-PATH     PIC X(200)
+               VALUE "data/opening-balances.dat".
+       01  WS-TRANSACTION-PATH        PIC X(200)
+               VALUE "data/transactions.dat".
+       01  WS-BALANCE-REPORT-PATH     PIC X(200)
+               VALUE "data/balances.dat".
+       01  WS-ERROR-LOG-PATH          PIC X(200)
+               VALUE "data/errors.log".
+       01  WS-ENV-VALUE               PIC X(200) VALUE SPACES.
+
        01  WS-FILE-STATUSES.
            05  WS-OPEN-BAL-STATUS      PIC XX     VALUE "00".
            05  WS-TRANS-STATUS         PIC XX     VALUE "00".
@@ -108,6 +124,7 @@
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
            DISPLAY "EOD-SETTLEMENT: starting batch run"
+           PERFORM READ-FILE-PATHS-FROM-ENV
            PERFORM OPEN-FILES
            PERFORM LOAD-OPENING-BALANCES
            PERFORM PROCESS-TRANSACTIONS
@@ -119,6 +136,34 @@
            DISPLAY "EOD-SETTLEMENT: accounts in report    = " WS-ACCOUNT-COUNT
            DISPLAY "EOD-SETTLEMENT: batch run complete"
            STOP RUN.
+
+      *> Lets a caller (e.g. the e2e reconciliation test) redirect all four
+      *> file paths without touching the checked-in sample data under
+      *> data/. An unset/empty environment variable leaves the default.
+       READ-FILE-PATHS-FROM-ENV.
+           MOVE SPACES TO WS-ENV-VALUE
+           ACCEPT WS-ENV-VALUE FROM ENVIRONMENT "EOD_OPENING_BALANCES_FILE"
+           IF WS-ENV-VALUE NOT = SPACES
+               MOVE WS-ENV-VALUE TO WS-OPENING-BALANCE-PATH
+           END-IF
+
+           MOVE SPACES TO WS-ENV-VALUE
+           ACCEPT WS-ENV-VALUE FROM ENVIRONMENT "EOD_TRANSACTIONS_FILE"
+           IF WS-ENV-VALUE NOT = SPACES
+               MOVE WS-ENV-VALUE TO WS-TRANSACTION-PATH
+           END-IF
+
+           MOVE SPACES TO WS-ENV-VALUE
+           ACCEPT WS-ENV-VALUE FROM ENVIRONMENT "EOD_BALANCES_FILE"
+           IF WS-ENV-VALUE NOT = SPACES
+               MOVE WS-ENV-VALUE TO WS-BALANCE-REPORT-PATH
+           END-IF
+
+           MOVE SPACES TO WS-ENV-VALUE
+           ACCEPT WS-ENV-VALUE FROM ENVIRONMENT "EOD_ERRORS_FILE"
+           IF WS-ENV-VALUE NOT = SPACES
+               MOVE WS-ENV-VALUE TO WS-ERROR-LOG-PATH
+           END-IF.
 
        OPEN-FILES.
            OPEN INPUT OPENING-BALANCE-FILE

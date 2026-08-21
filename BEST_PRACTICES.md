@@ -115,3 +115,13 @@ program itu cukup `COPY` file yang sama — layout tidak pernah bisa
   biasanya men-sort file transaksi lebih dulu lalu memakai
   control-break/match-merge logic — sengaja disederhanakan di sini demi
   keterbacaan, dicatat sebagai simplifikasi yang disengaja.
+- **Path file lewat WORKING-STORAGE + `ACCEPT FROM ENVIRONMENT`, bukan
+  literal langsung di `SELECT ... ASSIGN TO`** — ditambahkan untuk e2e
+  reconciliation test (`ledger-rail/e2e/tests/reconciliation.test.ts`,
+  path G di `e2e/PLAN.md`), yang perlu menjalankan `eod-settlement`
+  terhadap data sintetis tanpa menimpa sample data yang di-commit di
+  `data/`. Empat variable env opsional (`EOD_OPENING_BALANCES_FILE`,
+  `EOD_TRANSACTIONS_FILE`, `EOD_BALANCES_FILE`, `EOD_ERRORS_FILE`) —
+  kosong/tidak diset berarti pakai path default di `data/`, jadi
+  `./eod-settlement` tanpa env var tetap berperilaku identik seperti
+  sebelumnya (dites: output sama persis).
